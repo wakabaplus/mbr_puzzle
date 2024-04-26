@@ -21,6 +21,13 @@ init:
     .loop:
         .draw:
             xor bx, bx
+            mov al, "L"
+            call putchar
+            mov al, "V"
+            call putchar
+            mov al, byte [lv]
+            add al, "0"
+            call putchar
             .y:
                 call print_0d0a
                 cmp bl, MAX_Y
@@ -38,6 +45,7 @@ init:
                     cmp cl, [stone_x]
                     jz .check_stone_y
                 .normal:
+                    or byte [map+bx], 0b10000001
                     bt [map+bx], cx
                     jnc .print_empty
                     mov al, WALL
@@ -68,7 +76,37 @@ init:
                     jmp .y
     .main:
         call main
-        jmp .loop
+        cmp byte [lv], 1
+        jz .next
+        pusha
+        mov ah, 2
+        int 0x1a
+        xor ax, ax
+        add ax, cx
+        mul dh
+        mov [map+1], ax
+        mul cx
+        mov [map+3], ax
+        mul cx
+        mov [map+5], ax
+        popa
+        .next:
+        mov bl, [stone_x]
+        cmp bl, [goal_x]
+        jnz .loop
+        mov bl, [stone_y]
+        cmp bl, [goal_y]
+        jnz .loop
+        mov al, [lv]
+        inc al
+        mov byte [lv], al
+        mov byte [player_x], 1
+        mov byte [player_y], 1
+        mov byte [goal_x], 6
+        mov byte [goal_y], 6
+        mov byte [stone_x], 2
+        mov byte [stone_y], 2
+        jmp init
 
 
 print_0d0a:
@@ -195,7 +233,7 @@ main:
         mov bh, 0
         xor dx, dx
         int 0x10
-        jmp init.loop
+        ret
 
 wait_key:
     xor ax, ax
@@ -216,6 +254,8 @@ goal_x db 6
 goal_y db 6
 stone_x db 2
 stone_y db 2
+
+lv db 1
 
 map db 0b11111111,
     db 0b10000001,
